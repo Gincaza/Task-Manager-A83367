@@ -1,6 +1,5 @@
 import flet as ft
 
-
 class Task(ft.Column):
     def __init__(self, task_name, task_status_change, task_delete):
         super().__init__()
@@ -71,10 +70,10 @@ class Task(ft.Column):
     def delete_clicked(self, e):
         self.task_delete(self)
 
-
 class TodoApp(ft.Column):
-    def __init__(self):
+    def __init__(self, page: ft.Page):
         super().__init__()
+        self.page = page
         self.new_task = ft.TextField(
             hint_text="What needs to be done?", on_submit=self.add_clicked, expand=True
         )
@@ -122,6 +121,41 @@ class TodoApp(ft.Column):
             ),
         ]
 
+        # Adicionar o controle à página antes de carregar as tarefas
+        self.page.add(self)
+        self.page.update()
+
+        # Carregar tarefas ao iniciar
+        self.check_storage()
+
+    def check_storage(self):
+        storage = self.page.client_storage.get("tasks")
+        
+        if storage:
+            self.load_storage(storage)
+        else:
+            print("Nenhuma tarefa encontrada no armazenamento.")
+            return None
+
+    def load_storage(self, storage):
+        tasks = storage
+
+        for task_data in tasks:
+            task_name, task_completed = task_data
+            task = Task(task_name, self.task_status_change, self.task_delete)
+            task.completed = task_completed
+            task.display_task.value = task_completed
+            self.tasks.controls.append(task)
+
+        self.update()
+
+    def save_storage(self):
+        tasks = []
+        for task in self.tasks.controls:
+            tasks.append((task.task_name, task.completed))
+
+        self.page.client_storage.set("tasks", tasks)
+
     def add_clicked(self, e):
         if self.new_task.value:
             task = Task(self.new_task.value, self.task_status_change, self.task_delete)
@@ -129,13 +163,16 @@ class TodoApp(ft.Column):
             self.new_task.value = ""
             self.new_task.focus()
             self.update()
+            self.save_storage()  # Salvar tarefas
 
     def task_status_change(self, task):
         self.update()
+        self.save_storage()  # Salvar tarefas
 
     def task_delete(self, task):
         self.tasks.controls.remove(task)
         self.update()
+        self.save_storage()  # Salvar tarefas
 
     def tabs_changed(self, e):
         self.update()
@@ -144,6 +181,7 @@ class TodoApp(ft.Column):
         for task in self.tasks.controls[:]:
             if task.completed:
                 self.task_delete(task)
+        self.save_storage()  # Salvar tarefas
 
     def before_update(self):
         status = self.filter.tabs[self.filter.selected_index].text
@@ -158,12 +196,14 @@ class TodoApp(ft.Column):
                 count += 1
         self.items_left.value = f"{count} active item(s) left"
 
-
 def main(page: ft.Page):
     page.title = "ToDo App"
     page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
     page.scroll = ft.ScrollMode.ADAPTIVE
-    page.add(TodoApp())
 
+    # Instanciar o TodoApp
+    todo_app = TodoApp(page)
+
+    page.update()
 
 ft.app(main)
