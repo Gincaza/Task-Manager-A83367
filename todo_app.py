@@ -134,6 +134,8 @@ class TodoApp(ft.Column):
     def check_storage(self):
         storage = self.page.client_storage.get("tasks")
         
+        # self.page.client_storage.remove("tasks")  # Remover tarefas antigas pra debugging
+
         if storage:
             self.load_storage(storage)
         else:
