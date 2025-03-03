@@ -1,4 +1,7 @@
 import flet as ft
+from flet.security import encrypt, decrypt
+
+SECRET_KEY = "radiopiao"
 
 class Task(ft.Column):
     def __init__(self, task_name, task_status_change, task_delete):
@@ -141,9 +144,10 @@ class TodoApp(ft.Column):
         tasks = storage
 
         for task_data in tasks:
-            task = Task(task_data['task_name'], self.task_status_change, self.task_delete)
-            task.completed = task_data['status']
-            task.display_task.value = task_data['status']
+            task_name, task_status = decrypt(task_data['task_name'], SECRET_KEY), task_data['status']
+            task = Task(task_name, self.task_status_change, self.task_delete)
+            task.completed = task_status
+            task.display_task.value = task_status
             self.tasks.controls.append(task)
 
         self.update()
@@ -152,7 +156,7 @@ class TodoApp(ft.Column):
         tasks = []
         for task in self.tasks.controls:
             tasks.append({
-                "task_name": task.task_name, 
+                "task_name": encrypt(task.task_name, SECRET_KEY), 
                 "status": task.completed,
             })
 
