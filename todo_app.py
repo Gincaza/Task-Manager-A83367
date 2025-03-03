@@ -141,10 +141,9 @@ class TodoApp(ft.Column):
         tasks = storage
 
         for task_data in tasks:
-            task_name, task_completed = task_data
-            task = Task(task_name, self.task_status_change, self.task_delete)
-            task.completed = task_completed
-            task.display_task.value = task_completed
+            task = Task(task_data['task_name'], self.task_status_change, self.task_delete)
+            task.completed = task_data['status']
+            task.display_task.value = task_data['status']
             self.tasks.controls.append(task)
 
         self.update()
@@ -152,7 +151,10 @@ class TodoApp(ft.Column):
     def save_storage(self):
         tasks = []
         for task in self.tasks.controls:
-            tasks.append((task.task_name, task.completed))
+            tasks.append({
+                "task_name": task.task_name, 
+                "status": task.completed,
+            })
 
         self.page.client_storage.set("tasks", tasks)
 
