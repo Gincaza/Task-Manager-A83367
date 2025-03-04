@@ -64,6 +64,7 @@ class Task(ft.Column):
         self.display_task.label = self.edit_name.value
         self.display_view.visible = True
         self.edit_view.visible = False
+        self.task_status_change(self)  # Atualizar armazenamento
         self.update()
 
     def status_changed(self, e):
@@ -134,13 +135,10 @@ class TodoApp(ft.Column):
     def check_storage(self):
         storage = self.page.client_storage.get("tasks")
         
-        # self.page.client_storage.remove("tasks")  # Remover tarefas antigas pra debugging
-
         if storage:
             self.load_storage(storage)
         else:
             print("Nenhuma tarefa encontrada no armazenamento.")
-            return None
 
     def load_storage(self, storage):
         tasks = storage
@@ -152,6 +150,7 @@ class TodoApp(ft.Column):
             task.display_task.value = task_status
             self.tasks.controls.append(task)
 
+        self.before_update()
         self.update()
 
     def save_storage(self):
@@ -170,26 +169,30 @@ class TodoApp(ft.Column):
             self.tasks.controls.append(task)
             self.new_task.value = ""
             self.new_task.focus()
+            self.before_update()
             self.update()
-            self.save_storage()  # Salvar tarefas
+            self.save_storage()
 
     def task_status_change(self, task):
+        self.before_update()
         self.update()
-        self.save_storage()  # Salvar tarefas
+        self.save_storage()
 
     def task_delete(self, task):
         self.tasks.controls.remove(task)
+        self.before_update()
         self.update()
-        self.save_storage()  # Salvar tarefas
+        self.save_storage()
 
     def tabs_changed(self, e):
+        self.before_update()
         self.update()
 
     def clear_clicked(self, e):
         for task in self.tasks.controls[:]:
             if task.completed:
                 self.task_delete(task)
-        self.save_storage()  # Salvar tarefas
+        self.save_storage()
 
     def before_update(self):
         status = self.filter.tabs[self.filter.selected_index].text
@@ -197,7 +200,7 @@ class TodoApp(ft.Column):
         for task in self.tasks.controls:
             task.visible = (
                 status == "all"
-                or (status == "active" and task.completed == False)
+                or (status == "active" and not task.completed)
                 or (status == "completed" and task.completed)
             )
             if not task.completed:
