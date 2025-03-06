@@ -202,15 +202,3 @@ class TodoApp(ft.Column):
             if not task.completed:
                 count += 1
         self.items_left.value = f"{count} active item(s) left"
-
-def main(page: ft.Page):
-    page.title = "ToDo App"
-    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-    page.scroll = ft.ScrollMode.ADAPTIVE
-
-    # Instanciar o TodoApp
-    todo_app = TodoApp(page)
-
-    page.update()
-
-ft.app(main)
