@@ -147,7 +147,7 @@ class TodoApp(ft.Column):
             self.tasks.controls.append(task)
 
         self.before_update()
-        self.update()
+        self.page.update()
 
     def save_storage(self):
         tasks = []
