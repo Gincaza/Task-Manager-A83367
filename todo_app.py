@@ -125,10 +125,6 @@ class TodoApp(ft.Column):
             ),
         ]
 
-        # Adicionar o controle à página antes de carregar as tarefas
-        self.page.add(self)
-        self.page.update()
-
         # Carregar tarefas ao iniciar
         self.check_storage()
 
