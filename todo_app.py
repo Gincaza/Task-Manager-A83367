@@ -1,4 +1,7 @@
 import flet as ft
+from flet.security import encrypt, decrypt
+
+SECRET_KEY = "radiopiao"
 
 class Task(ft.Column):
     def __init__(self, task_name, task_status_change, task_delete):
@@ -61,6 +64,7 @@ class Task(ft.Column):
         self.display_task.label = self.edit_name.value
         self.display_view.visible = True
         self.edit_view.visible = False
+        self.task_status_change(self)  # Atualizar armazenamento
         self.update()
 
     def status_changed(self, e):
@@ -121,40 +125,50 @@ class TodoApp(ft.Column):
             ),
         ]
 
-        # Adicionar o controle à página antes de carregar as tarefas
-        self.page.add(self)
-        self.page.update()
-
         # Carregar tarefas ao iniciar
         self.check_storage()
 
     def check_storage(self):
-        storage = self.page.client_storage.get("tasks")
-        
-        if storage:
-            self.load_storage(storage)
+        # Recupera o ID do usuário autenticado
+        token = self.page.auth.user.id if self.page.auth and self.page.auth.user.id else None
+
+
+        storage = self.page.client_storage.get("tasks") or {}
+        user_tasks = storage.get(token, [])
+
+        if user_tasks:
+            self.load_storage(user_tasks)
         else:
-            print("Nenhuma tarefa encontrada no armazenamento.")
-            return None
+            print("Nenhuma tarefa encontrada para este usuário.")
 
     def load_storage(self, storage):
         tasks = storage
 
         for task_data in tasks:
-            task_name, task_completed = task_data
+            task_name, task_status = decrypt(task_data['task_name'], SECRET_KEY), task_data['status']
             task = Task(task_name, self.task_status_change, self.task_delete)
-            task.completed = task_completed
-            task.display_task.value = task_completed
+            task.completed = task_status
+            task.display_task.value = task_status
             self.tasks.controls.append(task)
 
-        self.update()
+        self.before_update()
+        self.page.update()
 
     def save_storage(self):
+        token = self.page.auth.user.id if self.page.auth and self.page.auth.user.id else None
+
+        # Cria a lista de tarefas criptografadas do usuário atual
         tasks = []
         for task in self.tasks.controls:
-            tasks.append((task.task_name, task.completed))
+            tasks.append({
+                "task_name": encrypt(task.task_name, SECRET_KEY), 
+                "status": task.completed,
+            })
 
-        self.page.client_storage.set("tasks", tasks)
+        # Recupera o dicionário existente e atualiza apenas o token atual
+        storage = self.page.client_storage.get("tasks") or {}
+        storage[token] = tasks
+        self.page.client_storage.set("tasks", storage)
 
     def add_clicked(self, e):
         if self.new_task.value:
@@ -162,26 +176,30 @@ class TodoApp(ft.Column):
             self.tasks.controls.append(task)
             self.new_task.value = ""
             self.new_task.focus()
+            self.before_update()
             self.update()
-            self.save_storage()  # Salvar tarefas
+            self.save_storage()
 
     def task_status_change(self, task):
+        self.before_update()
         self.update()
-        self.save_storage()  # Salvar tarefas
+        self.save_storage()
 
     def task_delete(self, task):
         self.tasks.controls.remove(task)
+        self.before_update()
         self.update()
-        self.save_storage()  # Salvar tarefas
+        self.save_storage()
 
     def tabs_changed(self, e):
+        self.before_update()
         self.update()
 
     def clear_clicked(self, e):
         for task in self.tasks.controls[:]:
             if task.completed:
                 self.task_delete(task)
-        self.save_storage()  # Salvar tarefas
+        self.save_storage()
 
     def before_update(self):
         status = self.filter.tabs[self.filter.selected_index].text
@@ -189,21 +207,9 @@ class TodoApp(ft.Column):
         for task in self.tasks.controls:
             task.visible = (
                 status == "all"
-                or (status == "active" and task.completed == False)
+                or (status == "active" and not task.completed)
                 or (status == "completed" and task.completed)
             )
             if not task.completed:
                 count += 1
         self.items_left.value = f"{count} active item(s) left"
-
-def main(page: ft.Page):
-    page.title = "ToDo App"
-    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
-    page.scroll = ft.ScrollMode.ADAPTIVE
-
-    # Instanciar o TodoApp
-    todo_app = TodoApp(page)
-
-    page.update()
-
-ft.app(main)
