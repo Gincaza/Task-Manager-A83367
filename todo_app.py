@@ -129,12 +129,17 @@ class TodoApp(ft.Column):
         self.check_storage()
 
     def check_storage(self):
-        storage = self.page.client_storage.get("tasks")
-        
-        if storage:
-            self.load_storage(storage)
+        # Recupera o ID do usuário autenticado
+        token = self.page.auth.user.id if self.page.auth and self.page.auth.user.id else None
+
+
+        storage = self.page.client_storage.get("tasks") or {}
+        user_tasks = storage.get(token, [])
+
+        if user_tasks:
+            self.load_storage(user_tasks)
         else:
-            print("Nenhuma tarefa encontrada no armazenamento.")
+            print("Nenhuma tarefa encontrada para este usuário.")
 
     def load_storage(self, storage):
         tasks = storage
@@ -150,6 +155,9 @@ class TodoApp(ft.Column):
         self.page.update()
 
     def save_storage(self):
+        token = self.page.auth.user.id if self.page.auth and self.page.auth.user.id else None
+
+        # Cria a lista de tarefas criptografadas do usuário atual
         tasks = []
         for task in self.tasks.controls:
             tasks.append({
@@ -157,7 +165,10 @@ class TodoApp(ft.Column):
                 "status": task.completed,
             })
 
-        self.page.client_storage.set("tasks", tasks)
+        # Recupera o dicionário existente e atualiza apenas o token atual
+        storage = self.page.client_storage.get("tasks") or {}
+        storage[token] = tasks
+        self.page.client_storage.set("tasks", storage)
 
     def add_clicked(self, e):
         if self.new_task.value:
