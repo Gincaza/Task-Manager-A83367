@@ -1,0 +1,3 @@
+[build]
+    publish = "assets"
+    command = "python main.py"
