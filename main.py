@@ -61,4 +61,4 @@ def main(page: ft.Page):
     page.views.append(build_view(page.route, page))
     page.update()
 
-ft.app(target=main, port=8550, view=ft.WEB_BROWSER)
+ft.app(target=main, port=8550, view=ft.WEB_BROWSER, assets_dir="assets")
