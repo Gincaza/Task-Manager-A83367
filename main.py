@@ -11,7 +11,7 @@ def build_view(route: str, page: ft.Page):
         provider = GitHubOAuthProvider(
             client_id=GITHUB_CLIENT_ID,
             client_secret=GITHUB_CLIENT_SECRET,
-            redirect_url="http://localhost:8550/oauth_callback",
+            redirect_url="http://task-manager-a83367.onrender.com:8550/oauth_callback",
         )
 
         def login_click(e):
